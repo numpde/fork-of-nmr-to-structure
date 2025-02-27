@@ -1,1 +1,41 @@
 19:58:52,406 root INFO Opening MestreNova
+13:59:02,365 root INFO Opening MestreNova
+13:59:18,690 root INFO Opening MestreNova
+14:01:55,156 root INFO Opening MestreNova
+14:02:38,379 root INFO Opening MestreNova
+14:05:06,235 root INFO Opening MestreNova
+14:05:52,70 root INFO Opening MestreNova
+14:05:54,579 root INFO Running: index 0 smiles COCC(=O)CC(=O)OC output_path example/simulation_out/1H/1H_0.csv
+14:06:48,737 root INFO Opening MestreNova
+14:06:56,327 root INFO Opening MestreNova
+14:07:07,862 root INFO Opening MestreNova
+14:07:10,371 root INFO Running: index 0 smiles COCC(=O)CC(=O)OC output_path example/simulation_out/1H/1H_0.csv
+14:07:22,807 root INFO Opening MestreNova
+14:07:25,314 root INFO Running: index 0 smiles COCC(=O)CC(=O)OC output_path example/simulation_out/1H/1H_0.csv
+14:07:36,661 root INFO Opening MestreNova
+14:07:39,169 root INFO Running: index 0 smiles COCC(=O)CC(=O)OC output_path example/simulation_out/1H/1H_0.csv
+14:08:11,318 root WARNING Smiles: COCC(=O)CC(=O)OC, index: 0 timed out reopening MestreNova and skipping.
+14:08:11,318 root INFO Killing MestreNova
+14:08:12,351 root INFO Opening MestreNova
+14:08:14,858 root INFO Running: index 1 smiles CC(C)C(P)=CC1=CCOCC1 output_path example/simulation_out/1H/1H_1.csv
+14:08:47,48 root WARNING Smiles: CC(C)C(P)=CC1=CCOCC1, index: 1 timed out reopening MestreNova and skipping.
+14:08:47,48 root INFO Killing MestreNova
+14:08:48,74 root INFO Opening MestreNova
+14:08:50,582 root INFO Running: index 2 smiles O=C1CCC2C=CC(CC1)O2 output_path example/simulation_out/1H/1H_2.csv
+14:09:22,683 root WARNING Smiles: O=C1CCC2C=CC(CC1)O2, index: 2 timed out reopening MestreNova and skipping.
+14:09:22,683 root INFO Killing MestreNova
+14:09:23,707 root INFO Opening MestreNova
+14:09:26,216 root INFO Running: index 3 smiles CC(=CNCN)c1ccccc1 output_path example/simulation_out/1H/1H_3.csv
+14:10:13,524 root INFO Opening MestreNova
+14:10:16,32 root INFO Running: index 0 smiles COCC(=O)CC(=O)OC output_path example/simulation_out/1H/1H_0.csv
+14:10:17,38 root INFO Running: index 1 smiles CC(C)C(P)=CC1=CCOCC1 output_path example/simulation_out/1H/1H_1.csv
+14:10:19,48 root INFO Running: index 2 smiles O=C1CCC2C=CC(CC1)O2 output_path example/simulation_out/1H/1H_2.csv
+14:10:20,555 root INFO Running: index 3 smiles CC(=CNCN)c1ccccc1 output_path example/simulation_out/1H/1H_3.csv
+14:10:22,61 root INFO Running: index 4 smiles C=C1C(C)CC(C#N)CC1C output_path example/simulation_out/1H/1H_4.csv
+14:10:23,569 root INFO Running: index 5 smiles CNC(O)C(O)O output_path example/simulation_out/1H/1H_5.csv
+14:10:25,86 root INFO Running: index 6 smiles O=C(O)C(O)=CC1(O)CCCCC1 output_path example/simulation_out/1H/1H_6.csv
+14:10:28,94 root INFO Running: index 7 smiles CC1CCC2C(Br)C2C1 output_path example/simulation_out/1H/1H_7.csv
+14:10:30,621 root INFO Running: index 8 smiles Cc1c(C#N)oc2ccc(O)cc12 output_path example/simulation_out/1H/1H_8.csv
+14:10:31,627 root INFO Running: index 9 smiles NC(CCN1CC=CC1)C(=O)O output_path example/simulation_out/1H/1H_9.csv
+14:10:35,634 root INFO Killing MestreNova
+14:10:39,671 root INFO Set: 0 with batch_size 100 took: 0:00:26.146688
