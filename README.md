@@ -36,7 +36,8 @@ Running the MestreNova script requires a .csv file containing SMILES of the mole
 run_simulation --smiles_csv example/smiles.csv --out_folder example/simulation_out/1H --sim_type 1H --mnova_path <Absolute Path to your MestreNova executable> --script_path <Absolute path to the folder containing the MestreNova scripts>
 ```
 
-The MestreNova simulation scripts can be found here [link to folder]. This script uses the MestreNova scripting tool to run the simulations. As a result all MestreNova will be opened and you will be able to see how spectra are simulated. A file is saved for each molecule.
+The MestreNova simulation scripts can be found here -- [mestre_nova_scripts](src/nmr_to_structure/nmr_generation/mestre_nova_scripts). 
+This script uses the MestreNova scripting tool to run the simulations. As a result all MestreNova will be opened and you will be able to see how spectra are simulated. A file is saved for each molecule.
 
 To run the simulations for <sup>13</sup>C simply replace the `--sim_type` with `13C`.
 
@@ -60,7 +61,7 @@ The following scripts will use the data generated in the previous steps, format 
 This script can be used to prepare training data for a model that predicts the structure from the NMR. Using the data from above, training data can be prepared as such:
 
 ```
-prepare_nmr_input --nmr_data example/simulation_out/results.pkl --out_path example/training/1H --mode hnmr
+prepare_nmr_input --nmr_data example/simulation_out/results.pkl --out_path example/training/data --mode hnmr
 ```
 The above command will prepare training data for a model that predicts the structure solely from a <sup>1</sup>H NMR. Further options are available as described in the paper.
 
@@ -79,7 +80,7 @@ Run a training of the model using the run_training.py script. This script requir
 
 For the example try:
 ```
-train_model --template_path src/nmr_to_structure/training/transformer_template.yaml --data_folder example/train
+train_model --template_path src/nmr_to_structure/training/transformer_template.yaml --data_folder example/training
 ```
 Note: The template expects a GPU to be present and to run a real training much more data is required.
 

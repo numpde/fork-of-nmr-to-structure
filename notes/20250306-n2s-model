@@ -1,0 +1,212 @@
+The `transformer_template.yaml` produces the following OpenNMT-py model:
+
+[2025-03-06 17:59:06,425 INFO] NMTModel(
+  (encoder): TransformerEncoder(
+    (embeddings): Embeddings(
+      (make_embedding): Sequential(
+        (emb_luts): Elementwise(
+          (0): Embedding(136, 512, padding_idx=1)
+        )
+        (pe): PositionalEncoding()
+      )
+      (dropout): Dropout(p=0.3, inplace=False)
+    )
+    (transformer): ModuleList(
+      (0-3): 4 x TransformerEncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_keys): Linear(in_features=512, out_features=512, bias=False)
+          (linear_values): Linear(in_features=512, out_features=512, bias=False)
+          (linear_query): Linear(in_features=512, out_features=512, bias=False)
+          (softmax): Softmax(dim=-1)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (final_linear): Linear(in_features=512, out_features=512, bias=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=512, out_features=2048, bias=False)
+          (w_2): Linear(in_features=2048, out_features=512, bias=False)
+          (layer_norm): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+          (dropout_1): Dropout(p=0.3, inplace=False)
+          (dropout_2): Dropout(p=0.3, inplace=False)
+        )
+        (layer_norm): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+        (dropout): Dropout(p=0.3, inplace=False)
+      )
+    )
+    (layer_norm): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+  )
+  (decoder): TransformerDecoder(
+    (embeddings): Embeddings(
+      (make_embedding): Sequential(
+        (emb_luts): Elementwise(
+          (0): Embedding(24, 512, padding_idx=1)
+        )
+        (pe): PositionalEncoding()
+      )
+      (dropout): Dropout(p=0.3, inplace=False)
+    )
+    (layer_norm): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+    (transformer_layers): ModuleList(
+      (0-3): 4 x TransformerDecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_keys): Linear(in_features=512, out_features=512, bias=False)
+          (linear_values): Linear(in_features=512, out_features=512, bias=False)
+          (linear_query): Linear(in_features=512, out_features=512, bias=False)
+          (softmax): Softmax(dim=-1)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (final_linear): Linear(in_features=512, out_features=512, bias=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=512, out_features=2048, bias=False)
+          (w_2): Linear(in_features=2048, out_features=512, bias=False)
+          (layer_norm): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+          (dropout_1): Dropout(p=0.3, inplace=False)
+          (dropout_2): Dropout(p=0.3, inplace=False)
+        )
+        (layer_norm_1): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+        (dropout): Dropout(p=0.3, inplace=False)
+        (context_attn): MultiHeadedAttention(
+          (linear_keys): Linear(in_features=512, out_features=512, bias=False)
+          (linear_values): Linear(in_features=512, out_features=512, bias=False)
+          (linear_query): Linear(in_features=512, out_features=512, bias=False)
+          (softmax): Softmax(dim=-1)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (final_linear): Linear(in_features=512, out_features=512, bias=False)
+        )
+        (layer_norm_2): LayerNorm((512,), eps=1e-06, elementwise_affine=True)
+      )
+    )
+  )
+  (generator): Linear(in_features=512, out_features=24, bias=True)
+)
+
+This is about 30M parameters.
+
+The model should be equivalent to roughly the following:
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(torch.tensor(10000.0)) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe.unsqueeze(0))  # Fix: Register as buffer
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1), :]
+
+class MultiHeadedAttention(nn.Module):
+    def __init__(self, d_model, num_heads, dropout=0.2):
+        super(MultiHeadedAttention, self).__init__()
+        assert d_model % num_heads == 0
+        self.d_k = d_model // num_heads
+        self.num_heads = num_heads
+
+        self.linear_q = nn.Linear(d_model, d_model, bias=False)
+        self.linear_k = nn.Linear(d_model, d_model, bias=False)
+        self.linear_v = nn.Linear(d_model, d_model, bias=False)
+        self.final_linear = nn.Linear(d_model, d_model, bias=False)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, query, key, value, mask=None):
+        batch_size = query.size(0)
+
+        def reshape(x):
+            return x.view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
+
+        query, key, value = map(reshape, (self.linear_q(query), self.linear_k(key), self.linear_v(value)))
+        scores = torch.matmul(query, key.transpose(-2, -1)) / (self.d_k ** 0.5)
+
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, float('-inf'))
+
+        attn_weights = F.softmax(scores, dim=-1)
+        attn_weights = self.dropout(attn_weights)
+
+        output = torch.matmul(attn_weights, value)
+        output = output.transpose(1, 2).contiguous().view(batch_size, -1, self.d_k * self.num_heads)
+
+        return self.final_linear(output)
+
+class PositionwiseFeedForward(nn.Module):
+    def __init__(self, d_model, d_ff, dropout=0.3):
+        super(PositionwiseFeedForward, self).__init__()
+        self.w_1 = nn.Linear(d_model, d_ff, bias=False)
+        self.w_2 = nn.Linear(d_ff, d_model, bias=False)
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, x):
+        return self.layer_norm(x + self.dropout(self.w_2(F.relu(self.w_1(x)))))  # Fix: One dropout is enough
+
+class TransformerEncoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.3):
+        super(TransformerEncoderLayer, self).__init__()
+        self.self_attn = MultiHeadedAttention(d_model, num_heads, dropout)
+        self.feed_forward = PositionwiseFeedForward(d_model, d_ff, dropout)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, x, mask=None):
+        x = self.layer_norm(x + self.self_attn(x, x, x, mask))
+        return self.feed_forward(x)
+
+class TransformerDecoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.3):
+        super(TransformerDecoderLayer, self).__init__()
+        self.self_attn = MultiHeadedAttention(d_model, num_heads, dropout)
+        self.context_attn = MultiHeadedAttention(d_model, num_heads, dropout)
+        self.feed_forward = PositionwiseFeedForward(d_model, d_ff, dropout)
+        self.layer_norm_1 = nn.LayerNorm(d_model, eps=1e-6)
+        self.layer_norm_2 = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, x, memory, src_mask=None, tgt_mask=None):
+        x = self.layer_norm_1(x + self.self_attn(x, x, x, tgt_mask))
+        x = self.layer_norm_2(x + self.context_attn(x, memory, memory, src_mask))
+        return self.feed_forward(x)
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, vocab_size, d_model, num_layers, num_heads, d_ff, dropout=0.3):
+        super(TransformerEncoder, self).__init__()
+        self.embeddings = nn.Embedding(vocab_size, d_model, padding_idx=1)
+        self.pe = PositionalEncoding(d_model)
+        self.layers = nn.ModuleList([TransformerEncoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, x, mask=None):
+        x = self.pe(self.embeddings(x))
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.layer_norm(x)
+
+class TransformerDecoder(nn.Module):
+    def __init__(self, vocab_size, d_model, num_layers, num_heads, d_ff, dropout=0.3):
+        super(TransformerDecoder, self).__init__()
+        self.embeddings = nn.Embedding(vocab_size, d_model, padding_idx=1)
+        self.pe = PositionalEncoding(d_model)
+        self.layers = nn.ModuleList([TransformerDecoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, x, memory, src_mask=None, tgt_mask=None):
+        x = self.pe(self.embeddings(x))
+        for layer in self.layers:
+            x = layer(x, memory, src_mask, tgt_mask)
+        return self.layer_norm(x)
+
+class NMTModel(nn.Module):
+    def __init__(self, vocab_size_enc, vocab_size_dec, d_model=512, num_layers=4, num_heads=8, d_ff=2048, dropout=0.3):
+        super(NMTModel, self).__init__()
+        self.encoder = TransformerEncoder(vocab_size_enc, d_model, num_layers, num_heads, d_ff, dropout)
+        self.decoder = TransformerDecoder(vocab_size_dec, d_model, num_layers, num_heads, d_ff, dropout)
+        self.generator = nn.Linear(d_model, vocab_size_dec)
+
+    def forward(self, src, tgt, src_mask=None, tgt_mask=None):
+        memory = self.encoder(src, src_mask)
+        output = self.decoder(tgt, memory, src_mask, tgt_mask)
+        return self.generator(output)
+```
